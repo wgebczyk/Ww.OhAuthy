@@ -3,5 +3,5 @@
 public sealed class AuthCode : AuthResult
 {
     public required string Code { get; set; }
-    public string? State { get; set; }
+    public required string State { get; set; }
 }
