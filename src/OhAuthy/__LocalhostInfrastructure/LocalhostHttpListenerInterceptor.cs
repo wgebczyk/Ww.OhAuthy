@@ -7,10 +7,10 @@ namespace Ww.OhAuthy;
 // BASED-ON: https://github.com/AzureAD/microsoft-authentication-library-for-dotnet/blob/main/src/client/Microsoft.Identity.Client/Platforms/Features/DefaultOSBrowser/HttpListenerInterceptor.cs
 public sealed class LocalhostHttpListenerInterceptor(ILogger logger) : IUriInterceptor
 {
-    public async Task<AuthResult> ListenToSingleRequestAndRespondAsync(
+    public async Task<AuthenticationResult> ListenToSingleRequestAndRespondAsync(
         int port,
         string path,
-        Func<AuthResult, string> responseProducer,
+        Func<AuthenticationResult, string> responseProducer,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -91,7 +91,7 @@ public sealed class LocalhostHttpListenerInterceptor(ILogger logger) : IUriInter
         return urlToListenTo;
     }
 
-    private async Task<AuthResult> GetAuthorizationResponseAsync(HttpListenerContext context)
+    private async Task<AuthenticationResult> GetAuthorizationResponseAsync(HttpListenerContext context)
     {
         var requestMethod = context.Request.HttpMethod;
         var requestUrl = context.Request.Url!;
@@ -101,7 +101,7 @@ public sealed class LocalhostHttpListenerInterceptor(ILogger logger) : IUriInter
         switch (requestMethod)
         {
             case "GET":
-                return AuthResult.FromUri(requestUrl);
+                return AuthenticationResult.FromUri(requestUrl);
             case "POST":
                 return await GetAuthorizationResponseFromPostAsync(context.Request).ConfigureAwait(false);
             default:
@@ -110,7 +110,7 @@ public sealed class LocalhostHttpListenerInterceptor(ILogger logger) : IUriInter
         }
     }
 
-    private async Task<AuthResult> GetAuthorizationResponseFromPostAsync(HttpListenerRequest request)
+    private async Task<AuthenticationResult> GetAuthorizationResponseFromPostAsync(HttpListenerRequest request)
     {
         if (!request.HasEntityBody)
         {
@@ -127,10 +127,10 @@ public sealed class LocalhostHttpListenerInterceptor(ILogger logger) : IUriInter
         logger.LogInformation($"Received POST data with {postData.Length} bytes");
         logger.LogTrace("Successfully processed POST data");
 
-        return AuthResult.FromPostData(request.Url!, postData);
+        return AuthenticationResult.FromPostData(request.Url!, postData);
     }
 
-    private void Respond(Func<AuthResult, string> responseProducer, HttpListenerContext context, AuthResult authorizationResult)
+    private void Respond(Func<AuthenticationResult, string> responseProducer, HttpListenerContext context, AuthenticationResult authorizationResult)
     {
         var message = responseProducer(authorizationResult);
         logger.LogInformation("Processing a response message to the browser. HttpStatus: OK");

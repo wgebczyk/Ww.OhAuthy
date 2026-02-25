@@ -3,16 +3,14 @@ using Microsoft.Extensions.Primitives;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Ww.OhAuthy;
 
-public abstract class AuthResult
+public abstract class AuthenticationResult(Uri requestUri)
 {
-    [JsonIgnore]
-    public required Uri RequestUri { get; set; }
+    public Uri RequestUri { get; } = requestUri;
 
-    public static AuthResult FromUri(Uri requestUri)
+    public static AuthenticationResult FromUri(Uri requestUri)
     {
         string query = requestUri.Query.TrimStart('?');
         if (string.IsNullOrWhiteSpace(query))
@@ -23,7 +21,7 @@ public abstract class AuthResult
         return CreateFromParameters(requestUri, QueryHelpers.ParseQuery(query));
     }
 
-    public static AuthResult FromPostData(Uri requestUri, byte[] postData)
+    public static AuthenticationResult FromPostData(Uri requestUri, byte[] postData)
     {
         if (postData == null)
         {
@@ -33,7 +31,7 @@ public abstract class AuthResult
         return CreateFromParameters(requestUri, QueryHelpers.ParseQuery(Encoding.Default.GetString(postData).TrimEnd('\0')));
     }
 
-    private static AuthResult CreateFromParameters(Uri requestUri, Dictionary<string, StringValues> parameters)
+    private static AuthenticationResult CreateFromParameters(Uri requestUri, Dictionary<string, StringValues> parameters)
     {
         if (TryGetParameterValue(parameters, "error", out var error))
         {
@@ -43,54 +41,34 @@ public abstract class AuthResult
 
         if (TryGetParameterValue(parameters, "access_token", out var accessToken))
         {
-            return CreateAuthToken(requestUri, accessToken, parameters);
+            return CreateAuthenticationToken(requestUri, accessToken, parameters);
         }
 
-        return CreateAuthCode(requestUri, parameters);
+        return CreateAuthenticationCode(requestUri, parameters);
     }
 
-    private static AuthCode CreateAuthCode(Uri requestUri, Dictionary<string, StringValues> parameters)
+    private static AuthenticationCode CreateAuthenticationCode(Uri requestUri, Dictionary<string, StringValues> parameters)
     {
         var code = GetParameterValue(parameters, "code");
-        _ = TryGetParameterValue(parameters, "state", out var state);
+        var state = GetParameterValue(parameters, "state");
 
-        return new AuthCode
-        {
-            RequestUri = requestUri,
-            Code = code,
-            State = state
-        };
+        return new AuthenticationCode(requestUri, code, state);
     }
 
-    private static AuthToken CreateAuthToken(Uri requestUri, string accessToken, Dictionary<string, StringValues> parameters)
+    private static AuthenticationToken CreateAuthenticationToken(Uri requestUri, string accessToken, Dictionary<string, StringValues> parameters)
     {
         _ = TryGetParameterValue(parameters, "refresh_token", out var refreshToken);
         _ = TryGetParameterValue(parameters, "id_token", out var idToken);
 
-        return new AuthToken
+        return new AuthenticationToken(requestUri, GetParameterValue(parameters, "token_type"), GetParameterValue(parameters, "scope", string.Empty), long.Parse(GetParameterValue(parameters, "expires_in", "0")), accessToken)
         {
-            RequestUri = requestUri,
-
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            IdToken = idToken,
-
-            TokenType = GetParameterValue(parameters, "token_type"),
-            Scope = GetParameterValue(parameters, "scope", string.Empty),
-            ExpiresIn = long.Parse(GetParameterValue(parameters, "expires_in", "0")),
-
             Other = new Dictionary<string, JsonElement>(),
         };
     }
 
-    public static AuthResult CreateError(Uri requestUri, string error, string errorDescription)
+    public static AuthenticationResult CreateError(Uri requestUri, string error, string errorDescription)
     {
-        return new AuthError
-        {
-            RequestUri = requestUri,
-            Error = error,
-            ErrorDescription = errorDescription
-        };
+        return new AuthenticationError(requestUri, error, errorDescription);
     }
 
     private static bool TryGetParameterValue(Dictionary<string, StringValues> parameters, string parameterName, [NotNullWhen(true)] out string? value)

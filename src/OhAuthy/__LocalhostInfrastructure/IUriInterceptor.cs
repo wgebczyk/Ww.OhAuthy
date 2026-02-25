@@ -2,9 +2,9 @@
 
 public interface IUriInterceptor
 {
-    Task<AuthResult> ListenToSingleRequestAndRespondAsync(
+    Task<AuthenticationResult> ListenToSingleRequestAndRespondAsync(
         int port,
         string path,
-        Func<AuthResult, string> responseProducer,
+        Func<AuthenticationResult, string> responseProducer,
         CancellationToken cancellationToken);
 }
