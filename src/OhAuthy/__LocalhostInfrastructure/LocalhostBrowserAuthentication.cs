@@ -36,11 +36,11 @@ public sealed class LocalhostBrowserAuthentication
 
     private readonly IUriInterceptor _uriInterceptor;
     private readonly IPlatformProxy _platformProxy;
-    private readonly ILogger<LocalhostBrowserAuthentication> _logger;
+    private readonly ILogger _logger;
 
     public LocalhostBrowserAuthentication(
         IPlatformProxy proxy,
-        ILogger<LocalhostBrowserAuthentication> logger)
+        ILogger logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _platformProxy = proxy ?? throw new ArgumentNullException(nameof(proxy));
@@ -48,7 +48,7 @@ public sealed class LocalhostBrowserAuthentication
         _uriInterceptor = new LocalhostHttpListenerInterceptor(_logger);
     }
 
-    public async Task<AuthResult> AcquireAuthorizationAsync(
+    public async Task<AuthenticationResult> AcquireAuthorizationAsync(
         Uri authorizationUri,
         Uri redirectUri,
         CancellationToken cancellationToken)
@@ -108,7 +108,7 @@ public sealed class LocalhostBrowserAuthentication
         return redirectUri;
     }
 
-    private async Task<AuthResult> InterceptAuthorizationUriAsync(
+    private async Task<AuthenticationResult> InterceptAuthorizationUriAsync(
         Uri authorizationUri,
         Uri redirectUri,
         CancellationToken cancellationToken)
@@ -127,9 +127,9 @@ public sealed class LocalhostBrowserAuthentication
         .ConfigureAwait(false);
     }
 
-    private string GetResponseMessage(AuthResult authorizationResult)
+    private string GetResponseMessage(AuthenticationResult authorizationResult)
     {
-        if (authorizationResult is AuthError error)
+        if (authorizationResult is AuthenticationError error)
         {
             _logger.LogWarning($"Default OS Browser intercepted an Uri with an error: {error.Error} {error.ErrorDescription}");
 

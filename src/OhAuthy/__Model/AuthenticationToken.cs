@@ -3,17 +3,23 @@ using System.Text.Json.Nodes;
 
 namespace Ww.OhAuthy;
 
-public sealed class AuthToken : AuthResult
+public sealed class AuthenticationToken(
+    Uri requestUri,
+    string tokenType,
+    string scope,
+    long expiresIn,
+    string accessToken
+) : AuthenticationResult(requestUri)
 {
-    public required string TokenType { get; init; }
-    public required string Scope { get; init; }
-    public required long ExpiresIn { get; init; }
+    public string TokenType { get; } = tokenType;
+    public string Scope { get; } = scope;
+    public long ExpiresIn { get; } = expiresIn;
 
-    public required string AccessToken { get; init; }
-    public string? RefreshToken { get; init; }
-    public string? IdToken { get; init; }
+    public string AccessToken { get; } = accessToken;
+    public string? RefreshToken { get; set; }
+    public string? IdToken { get; set; }
 
-    public required IReadOnlyDictionary<string, JsonElement> Other { get; init; }
+    public required IReadOnlyDictionary<string, JsonElement> Other { get; set; } = new Dictionary<string, JsonElement>();
 
     private static readonly HashSet<string> KnownProperties = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -24,20 +30,22 @@ public sealed class AuthToken : AuthResult
         "refresh_token",
         "id_token"
     };
-    public static AuthToken FromJson(Uri requestUri, JsonObject json)
+
+    public static AuthenticationToken FromJson(Uri requestUri, JsonObject json)
     {
-        var other = json.Where(x => !KnownProperties.Contains(x.Key))
-            .ToDictionary(x => x.Key, x => x.Value!.AsValue().GetValue<JsonElement>());
-        return new AuthToken
+        return new AuthenticationToken(
+            requestUri: requestUri,
+            tokenType: GetPropertyString(json, "token_type"),
+            scope: GetPropertyString(json, "scope"),
+            expiresIn: GetPropertyNumber(json, "expires_in"),
+            accessToken: GetPropertyString(json, "access_token")
+        )
         {
-            RequestUri = requestUri,
-            TokenType = GetPropertyString(json, "token_type"),
-            Scope = GetPropertyString(json, "scope"),
-            ExpiresIn = GetPropertyNumber(json, "expires_in"),
-            AccessToken = GetPropertyString(json, "access_token"),
             RefreshToken = GetOptionalPropertyValue(json, "refresh_token"),
             IdToken = GetOptionalPropertyValue(json, "id_token"),
-            Other = other
+            Other = json
+                .Where(x => !KnownProperties.Contains(x.Key))
+                .ToDictionary(x => x.Key, x => x.Value!.AsValue().GetValue<JsonElement>()),
         };
     }
     private static string GetPropertyString(JsonObject json, string propertyName)
