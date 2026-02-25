@@ -28,7 +28,7 @@ public sealed class AuthorizationCodeExchangeTokenFlowSettings : ITokenBasedFlow
     {
         TokenUrl = tokenUrl;
         ClientId = authorizationCodeFlowSettings.ClientId;
-        RedirectUri = authorizationCodeFlowSettings.RedirectUrl;
+        RedirectUri = authorizationCodeFlowSettings.RedirectUri;
         Code = authenticationCode.Code;
         PkceVerifier = authorizationCodeFlowSettings.PkceVerifier;
         Scopes = authorizationCodeFlowSettings.Scopes;

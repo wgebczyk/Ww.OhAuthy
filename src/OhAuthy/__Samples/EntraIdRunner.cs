@@ -2,7 +2,7 @@
 
 namespace Ww.OhAuthy;
 
-public record Auth0Options
+public record EntraIdOptions
 {
     public string AuthorizeUrl { get; init; } = string.Empty;
     public string TokenUrl { get; init; } = string.Empty;
@@ -11,9 +11,9 @@ public record Auth0Options
     public string[] Scopes { get; init; } = [];
 }
 
-public sealed class Auth0Runner
+public sealed class EntraIdRunner
 {
-    private readonly Auth0Options _options = new();
+    private readonly EntraIdOptions _options = new();
     private LocalhostAuthenticationClient _authenticationClient = default!;
 
     private AuthorizationCodeFlowSettings _authCodeSettings = default!;
@@ -51,15 +51,15 @@ public sealed class Auth0Runner
         if (res is AuthenticationCode code)
         {
             _authCode = code;
-            Console.WriteLine($"(Auth0Runner) (1) Code: {_authCode.Code}");
+            Console.WriteLine($"(EntraIdRunner) (1) Code: {_authCode.Code}");
         }
         else if (res is AuthenticationError error)
         {
-            Console.WriteLine($"(Auth0Runner) (1) Error: {error.Error} ({error.ErrorDescription})");
+            Console.WriteLine($"(EntraIdRunner) (1) Error: {error.Error} ({error.ErrorDescription})");
         }
         else
         {
-            Console.WriteLine($"(Auth0Runner) (1) INTERNAL ERROR.");
+            Console.WriteLine($"(EntraIdRunner) (1) INTERNAL ERROR.");
         }
     }
 
@@ -69,7 +69,10 @@ public sealed class Auth0Runner
             tokenUrl: _options.TokenUrl,
             _authCodeSettings,
             _authCode
-        );
+        )
+        {
+            SendOrigin = true
+        };
 
         var res = await _authenticationClient.ExecuteAuthorizationCodeExchangeTokenFlowAsync(
             _codeExchangeTokenSettings,
@@ -78,15 +81,15 @@ public sealed class Auth0Runner
         if (res is AuthenticationToken token)
         {
             _authToken = token;
-            Console.WriteLine($"(Auth0Runner) (2) AccessToken: {_authToken.AccessToken})");
+            Console.WriteLine($"(EntraIdRunner) (2) AccessToken: {_authToken.AccessToken})");
         }
         else if (res is AuthenticationError error)
         {
-            Console.WriteLine($"(Auth0Runner) (2) Error: {error.Error} ({error.ErrorDescription})");
+            Console.WriteLine($"(EntraIdRunner) (2) Error: {error.Error} ({error.ErrorDescription})");
         }
         else
         {
-            Console.WriteLine($"(Auth0Runner) (2) INTERNAL ERROR.");
+            Console.WriteLine($"(EntraIdRunner) (2) INTERNAL ERROR.");
         }
     }
 
@@ -96,21 +99,25 @@ public sealed class Auth0Runner
             tokenUrl: _options.TokenUrl,
             _authCodeSettings,
             _authToken
-        );
+        )
+        {
+            RedirectUri = _options.RedirectUri,
+            SendOrigin = true,
+        };
 
         var res = await _authenticationClient.ExecuteTokenRefreshFlowAsync(_tokenRefreshSettings, CancellationToken.None);
         if (res is AuthenticationToken token)
         {
             _authTokenRefreshed = token;
-            Console.WriteLine($"(Auth0Runner) (3) AccessToken: {_authTokenRefreshed.AccessToken})");
+            Console.WriteLine($"(EntraIdRunner) (3) AccessToken: {_authTokenRefreshed.AccessToken})");
         }
         else if (res is AuthenticationError error)
         {
-            Console.WriteLine($"(Auth0Runner) (3) Error: {error.Error} ({error.ErrorDescription})");
+            Console.WriteLine($"(EntraIdRunner) (3) Error: {error.Error} ({error.ErrorDescription})");
         }
         else
         {
-            Console.WriteLine($"(Auth0Runner) (3) INTERNAL ERROR.");
+            Console.WriteLine($"(EntraIdRunner) (3) INTERNAL ERROR.");
         }
     }
 }

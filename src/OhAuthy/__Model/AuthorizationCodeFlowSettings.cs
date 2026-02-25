@@ -18,7 +18,7 @@ public sealed class AuthorizationCodeFlowSettings
     {
         AuthorizeUrl = authorizeUrl;
         ClientId = clientId;
-        RedirectUrl = redirectUrl;
+        RedirectUri = redirectUrl;
         Scopes = scopes;
 
         State = GetRandomState();
@@ -30,7 +30,7 @@ public sealed class AuthorizationCodeFlowSettings
 
     public string AuthorizeUrl { get; }
     public string ClientId { get; }
-    public string RedirectUrl { get; }
+    public string RedirectUri { get; }
     public IReadOnlyList<string> Scopes { get; }
 
     public string State { get; set; }
@@ -43,7 +43,7 @@ public sealed class AuthorizationCodeFlowSettings
     {
         yield return new KeyValue("client_id", ClientId);
         yield return new KeyValue("response_type", AuthorizationCodeFlowResponseType);
-        yield return new KeyValue("redirect_uri", RedirectUrl);
+        yield return new KeyValue("redirect_uri", RedirectUri);
         yield return new KeyValue("scope", string.Join(' ', Scopes));
         yield return new KeyValue("state", State ?? GetRandomState());
 

@@ -11,6 +11,9 @@ internal class Program
             .AddJsonFile("appsettings.local.json", optional: false)
             .Build();
 
-        await new Auth0Runner().RunAsync(config.GetSection("Auth0"));
+        //await new Auth0Runner().RunAsync(config.GetSection("Auth0"));
+        //await new EntraIdRunner().RunAsync(config.GetSection("EntraId"));
+        //await new GoogleRunner().RunAsync(config.GetSection("Google"));
+        await new PoeRunner().RunAsync(config.GetSection("Poe"));
     }
 }

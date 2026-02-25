@@ -2,26 +2,27 @@
 
 namespace Ww.OhAuthy;
 
-public record Auth0Options
+public record GoogleOptions
 {
     public string AuthorizeUrl { get; init; } = string.Empty;
     public string TokenUrl { get; init; } = string.Empty;
     public string ClientId { get; init; } = string.Empty;
+    public string ClientSecret { get; init; } = string.Empty;
     public string RedirectUri { get; init; } = string.Empty;
     public string[] Scopes { get; init; } = [];
 }
 
-public sealed class Auth0Runner
+public sealed class GoogleRunner
 {
-    private readonly Auth0Options _options = new();
+    private readonly GoogleOptions _options = new();
     private LocalhostAuthenticationClient _authenticationClient = default!;
 
     private AuthorizationCodeFlowSettings _authCodeSettings = default!;
     private AuthenticationCode _authCode = default!;
     private AuthorizationCodeExchangeTokenFlowSettings _codeExchangeTokenSettings = default!;
     private AuthenticationToken _authToken = default!;
-    private TokenRefreshFlowSettings _tokenRefreshSettings = default!;
-    private AuthenticationToken _authTokenRefreshed = default!;
+    private ImplicitFlowSettings _implicitFlowSettings = default!;
+    private AuthenticationToken _implicitAuthToken = default!;
 
     public async Task RunAsync(IConfigurationSection configuration)
     {
@@ -35,7 +36,8 @@ public sealed class Auth0Runner
 
         await RunAuthCodeFlowAsync();
         await RunCodeExchangeTokenFlowAsync();
-        await RunTokenRefreshFlowAsync();
+
+        await RunImplicitFlowAsync();
     }
 
     private async Task RunAuthCodeFlowAsync()
@@ -51,15 +53,15 @@ public sealed class Auth0Runner
         if (res is AuthenticationCode code)
         {
             _authCode = code;
-            Console.WriteLine($"(Auth0Runner) (1) Code: {_authCode.Code}");
+            Console.WriteLine($"(GoogleRunner) (1) Code: {_authCode.Code}");
         }
         else if (res is AuthenticationError error)
         {
-            Console.WriteLine($"(Auth0Runner) (1) Error: {error.Error} ({error.ErrorDescription})");
+            Console.WriteLine($"(GoogleRunner) (1) Error: {error.Error} ({error.ErrorDescription})");
         }
         else
         {
-            Console.WriteLine($"(Auth0Runner) (1) INTERNAL ERROR.");
+            Console.WriteLine($"(GoogleRunner) (1) INTERNAL ERROR.");
         }
     }
 
@@ -69,7 +71,11 @@ public sealed class Auth0Runner
             tokenUrl: _options.TokenUrl,
             _authCodeSettings,
             _authCode
-        );
+        )
+        {
+            ClientSecret = _options.ClientSecret,
+            SendOrigin = true
+        };
 
         var res = await _authenticationClient.ExecuteAuthorizationCodeExchangeTokenFlowAsync(
             _codeExchangeTokenSettings,
@@ -78,39 +84,43 @@ public sealed class Auth0Runner
         if (res is AuthenticationToken token)
         {
             _authToken = token;
-            Console.WriteLine($"(Auth0Runner) (2) AccessToken: {_authToken.AccessToken})");
+            Console.WriteLine($"(GoogleRunner) (2) AccessToken: {_authToken.AccessToken})");
         }
         else if (res is AuthenticationError error)
         {
-            Console.WriteLine($"(Auth0Runner) (2) Error: {error.Error} ({error.ErrorDescription})");
+            Console.WriteLine($"(GoogleRunner) (2) Error: {error.Error} ({error.ErrorDescription})");
         }
         else
         {
-            Console.WriteLine($"(Auth0Runner) (2) INTERNAL ERROR.");
+            Console.WriteLine($"(GoogleRunner) (2) INTERNAL ERROR.");
         }
     }
 
-    private async Task RunTokenRefreshFlowAsync()
+    private async Task RunImplicitFlowAsync()
     {
-        _tokenRefreshSettings = new TokenRefreshFlowSettings(
-            tokenUrl: _options.TokenUrl,
-            _authCodeSettings,
-            _authToken
+        _implicitFlowSettings = new ImplicitFlowSettings(
+            authorizeUrl: _options.AuthorizeUrl,
+            clientId: _options.ClientId,
+            redirectUri: _options.RedirectUri,
+            scopes: _options.Scopes
         );
 
-        var res = await _authenticationClient.ExecuteTokenRefreshFlowAsync(_tokenRefreshSettings, CancellationToken.None);
+        var res = await _authenticationClient.ExecuteImplicitFlowAsync(
+            _implicitFlowSettings,
+            CancellationToken.None
+        );
         if (res is AuthenticationToken token)
         {
-            _authTokenRefreshed = token;
-            Console.WriteLine($"(Auth0Runner) (3) AccessToken: {_authTokenRefreshed.AccessToken})");
+            _implicitAuthToken = token;
+            Console.WriteLine($"(GoogleRunner) (3) AccessToken: {_implicitAuthToken.AccessToken})");
         }
         else if (res is AuthenticationError error)
         {
-            Console.WriteLine($"(Auth0Runner) (3) Error: {error.Error} ({error.ErrorDescription})");
+            Console.WriteLine($"(GoogleRunner) (3) Error: {error.Error} ({error.ErrorDescription})");
         }
         else
         {
-            Console.WriteLine($"(Auth0Runner) (3) INTERNAL ERROR.");
+            Console.WriteLine($"(GoogleRunner) (3) INTERNAL ERROR.");
         }
     }
 }

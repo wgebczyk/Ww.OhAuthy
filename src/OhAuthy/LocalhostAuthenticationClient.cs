@@ -29,7 +29,7 @@ public sealed class LocalhostAuthenticationClient
 
         var authResult = await authentication.AcquireAuthorizationAsync(
             new Uri(QueryHelpers.AddQueryString(settings.AuthorizeUrl, parameters)),
-            new Uri(settings.RedirectUrl),
+            new Uri(settings.RedirectUri),
             cancellationToken
         );
 
